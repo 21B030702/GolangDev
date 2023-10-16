@@ -30,15 +30,12 @@ func (app *application) createCarDetailsHandler(w http.ResponseWriter, r *http.R
 		Weight:           input.Weight,
 	}
 	v := validator.New()
+
 	if data.ValidateCarDetail(v, carDetail); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
-	if !v.Valid() {
-		app.failedValidationResponse(w, r, v.Errors)
-		return
-	}
 	fmt.Fprintf(w, "%+v\n", input)
 }
 
