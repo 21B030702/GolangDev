@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/lib/pq"
 	"time"
 )
@@ -121,7 +122,7 @@ DELETE FROM car_details
 WHERE id = $1`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	
+
 	result, err := c.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
@@ -134,5 +135,55 @@ WHERE id = $1`
 		return ErrRecordNotFound
 	}
 	return nil
+
+}
+func (c CarDetailModel) GetAll(title string, genres []string, filters Filters) ([]*CarDetail, Metadata, error) {
+	// Construct the SQL query to retrieve all movie records.
+	query := fmt.Sprintf(`
+SELECT id, created_at, title, dateofproduction, weight, material, price
+FROM car_details
+WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '')
+AND (material @> $2 OR $2 = '{}')
+ORDER BY %s %s, id ASC
+LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
+	// Create a context with a 3-second timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := c.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+
+	defer rows.Close()
+	// Initialize an empty slice to hold the movie data.
+	totalRecords := 0
+	details := []*CarDetail{}
+	// Use rows.Next to iterate through the rows in the resultset.
+	for rows.Next() {
+		// Initialize an empty Movie struct to hold the data for an individual movie.
+		var detail CarDetail
+
+		err := rows.Scan(
+			&totalRecords,
+			&detail.ID,
+			&detail.CreatedAt,
+			&detail.Title,
+			&detail.DateOfProduction,
+			&detail.Weight,
+			pq.Array(&detail.Material),
+			&detail.Price,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+		details = append(details, &detail)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return details, metadata, nil
 
 }

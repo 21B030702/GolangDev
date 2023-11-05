@@ -170,3 +170,45 @@ func (app *application) deleteCarDetailHandler(w http.ResponseWriter, r *http.Re
 		app.serverErrorResponse(w, r, err)
 	}
 }
+func (app *application) listCarDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	//var input struct {
+	//	Title     string
+	//	Materials []string
+	//	Page      int
+	//	PageSize  int
+	//	Sort      string
+	//}
+	var input struct {
+		Title     string
+		Materials []string
+		data.Filters
+	}
+
+	v := validator.New()
+
+	qs := r.URL.Query()
+
+	input.Title = app.readString(qs, "title", "")
+	input.Materials = app.readCSV(qs, "materials", []string{})
+
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafelist = []string{"id", "title", "date_of_production", "weight", "-id", "-title", "-date_of_production", "-weight"}
+
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+	fmt.Fprintf(w, "%+v\n", input)
+	movies, metadata, err := app.models.CarDetails.GetAll(input.Title, input.Materials, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	err = app.writeJSON(w, http.StatusOK, envelope{"car_details": movies, "metadata": metadata}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
