@@ -2,6 +2,7 @@ package data
 
 import (
 	"car_detailing.arsennusip.net/internal/validator"
+	"context"
 	"database/sql"
 	"errors"
 	"github.com/lib/pq"
@@ -40,7 +41,9 @@ func (c CarDetailModel) Insert(detail *CarDetail) error {
 			VALUES ($1, $2, $3, $4)
 			RETURNING id, created_at, description`
 	args := []interface{}{detail.Title, detail.DateOfProduction, detail.Weight, pq.Array(detail.Material)}
-	return c.DB.QueryRow(query, args...).Scan(&detail.ID, &detail.CreatedAt, &detail.Description)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	return c.DB.QueryRowContext(ctx, query, args...).Scan(&detail.ID, &detail.CreatedAt, &detail.Description)
 }
 
 func (c CarDetailModel) Get(id int64) (*CarDetail, error) {
@@ -48,7 +51,7 @@ func (c CarDetailModel) Get(id int64) (*CarDetail, error) {
 		return nil, ErrRecordNotFound
 	}
 	query := `
-SELECT id, created_at, title, description, dateofproduction, weight, material, price
+SELECT  id, created_at, title, description, dateofproduction, weight, material, price
 FROM car_details
 WHERE id = $1`
 	// Declare a Movie struct to hold the data returned by the query.
@@ -56,7 +59,10 @@ WHERE id = $1`
 	// as a placeholder parameter, and scan the response data into the fields of the
 	// Movie struct. Importantly, notice that we need to convert the scan target for the
 	// genres column using the pq.Array() adapter function again.
-	err := c.DB.QueryRow(query, id).Scan(
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := c.DB.QueryRowContext(ctx, query, id).Scan(
 		&detail.ID,
 		&detail.CreatedAt,
 		&detail.Title,
@@ -82,7 +88,7 @@ func (c CarDetailModel) Update(detail *CarDetail) error {
 	query := `
 UPDATE car_details
 SET title = $1, dateofproduction = $2, weight = $3, material = $4, price = price + 300
-WHERE id = $5
+WHERE id = $5 AND price = $6
 RETURNING price`
 	args := []interface{}{
 		detail.Title,
@@ -90,8 +96,20 @@ RETURNING price`
 		detail.Weight,
 		pq.Array(detail.Material),
 		detail.ID,
+		detail.Price,
 	}
-	return c.DB.QueryRow(query, args...).Scan(&detail.Price)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err := c.DB.QueryRowContext(ctx, query, args...).Scan(&detail.Price)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
 	return nil
 }
 func (c CarDetailModel) Delete(id int64) error {
@@ -101,7 +119,10 @@ func (c CarDetailModel) Delete(id int64) error {
 	query := `
 DELETE FROM car_details
 WHERE id = $1`
-	result, err := c.DB.Exec(query, id)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	
+	result, err := c.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}

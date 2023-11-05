@@ -111,6 +111,18 @@ func (app *application) updateCarDetailHandler(w http.ResponseWriter, r *http.Re
 	detail.DateOfProduction = input.DateOfProduction
 	detail.Weight = input.Weight
 	detail.Material = input.Material
+	//if input.Title != nil {
+	//	detail.Title = input.Title
+	//}
+	//if input.DateOfProduction != nil {
+	//	detail.DateOfProduction = *input.DateOfProduction
+	//}
+	//if input.Weight != nil {
+	//	detail.Weight = *input.Weight
+	//}
+	//if input.Material != nil {
+	//	detail.Material = input.Material // Note that we don't need to dereference a slice.
+	//}
 
 	v := validator.New()
 
@@ -121,7 +133,12 @@ func (app *application) updateCarDetailHandler(w http.ResponseWriter, r *http.Re
 
 	err = app.models.CarDetails.Update(detail)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
 
