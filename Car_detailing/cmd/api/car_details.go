@@ -60,22 +60,22 @@ func (app *application) showCarDetailsHandler(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
-	//detail := &data.CarDetail{
-	//	ID:               id,
-	//	Title:            "Car Detail",
-	//	Description:      "web0fgheafbjkwnakedewdjncas",
-	//	DateOfProduction: "07.10.2023",
-	//	Weight:           1.5,
-	//	Material:         "Aluminium",
-	//	Price:            30,
-	//}
-	//err = app.models.CarDetails.Insert(detail)
-	//if err != nil {
-	//	app.serverErrorResponse(w, r, err)
-	//}
-	//headers := make(http.Header)
-	//headers.Set("Location", fmt.Sprintf("/v1/car_details/%d", detail.ID))
-	//err = app.writeJSON(w, http.StatusOK, envelope{"car_detail": detail}, nil)
+	//	detail := &data.CarDetail{
+	//		ID:               id,
+	//		Title:            "Car Detail",
+	//		Description:      "web0fgheafbjkwnakedewdjncas",
+	//		DateOfProduction: "07.10.2023",
+	//		Weight:           1.5,
+	//		Material:         "Aluminium",
+	//		Price:            30,
+	//	}
+	//	err = app.models.CarDetails.Insert(detail)
+	//	if err != nil {
+	//		app.serverErrorResponse(w, r, err)
+	//	}
+	//	headers := make(http.Header)
+	//	headers.Set("Location", fmt.Sprintf("/v1/car_details/%d", detail.ID))
+	//	err = app.writeJSON(w, http.StatusOK, envelope{"car_detail": detail}, nil)
 }
 
 func (app *application) updateCarDetailHandler(w http.ResponseWriter, r *http.Request) {

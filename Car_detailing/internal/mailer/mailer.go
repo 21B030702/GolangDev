@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+//go:embed "templates"
 var templateFS embed.FS
 
 type Mailer struct {
