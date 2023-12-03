@@ -13,11 +13,11 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
 
-	router.HandlerFunc(http.MethodGet, "/v1/car_details", app.listCarDetailsHandler)
-	router.HandlerFunc(http.MethodPost, "/v1/car_details", app.createCarDetailsHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/car_details/:id", app.showCarDetailsHandler)
-	router.HandlerFunc(http.MethodPut, "/v1/car_details/:id", app.updateCarDetailHandler)
-	router.HandlerFunc(http.MethodDelete, "/v1/car_details/:id", app.deleteCarDetailHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/car_details", app.requirePermission("car_details:read", app.listCarDetailsHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/car_details", app.requirePermission("car_details:write", app.createCarDetailsHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/car_details/:id", app.requirePermission("car_details:read", app.showCarDetailsHandler))
+	router.HandlerFunc(http.MethodPut, "/v1/car_details/:id", app.requirePermission("car_details:write", app.updateCarDetailHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/car_details/:id", app.requirePermission("car_details:write", app.deleteCarDetailHandler))
 
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
 
